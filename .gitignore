@@ -1,2 +1,4 @@
 .env
 .venv
+data/vectors/*
+!data/vectors/.gitkeep
