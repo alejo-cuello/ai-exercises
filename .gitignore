@@ -2,3 +2,4 @@
 .venv
 data/vectors/*
 !data/vectors/.gitkeep
+data/raw/ed3book_jan26.pdf
