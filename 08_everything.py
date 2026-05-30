@@ -3,6 +3,7 @@ import streamlit as st
 
 from dotenv import load_dotenv
 from operator import itemgetter
+from functools import partial
 
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, GoogleGenerativeAI
@@ -10,10 +11,13 @@ from langchain_community.document_transformers import LongContextReorder
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever, MultiQueryRetriever
 from langchain_classic.indexes import SQLRecordManager
-from langchain_classic.schema import Document, StrOutputParser
+from langchain_classic.schema import Document, StrOutputParser, HumanMessage, AIMessage
+from langchain_classic.schema.runnable import RunnableMap
 from langchain_core.prompts import PromptTemplate
 
 load_dotenv()
+
+k = 3
 
 CONDENSE_QUESTION_TEMPLATE = """\
 Given the following conversation and a follow up question, rephrase the follow up \
@@ -96,7 +100,7 @@ def initialize_llm():
     
     api_key = os.getenv("API_KEY")
     
-    llm = model = GoogleGenerativeAI(
+    llm = GoogleGenerativeAI(
         api_key=api_key,
         model="gemini-2.5-flash-lite",
         temperature=0.0,
@@ -151,16 +155,112 @@ def create_retriever_chain(_llm, _retriever, _use_chat_history):
         conversation_chain = condense_question_chain | _retriever
         return conversation_chain
 
+def get_k_or_less_documents(documents, k):
+    if len(documents) <= k:
+        return documents
+    else:
+        return documents[:k]
+
+def create_answer_chain(_llm,_retriever,_use_chat_history,_k):
+
+    retriever_chain = create_retriever_chain(_llm, _retriever, _use_chat_history)
+    _get_k_or_less_documents = partial(get_k_or_less_documents, k=_k)
+
+    context = RunnableMap(
+        {
+            "context": (
+                retriever_chain
+                | _get_k_or_less_documents
+                | reorder_documents
+                | format_docs
+            ),
+            "question": itemgetter("question"),
+            "chat_history": itemgetter("chat_history"),
+        }
+    )
+
+    prompt = ChatPromptTemplate.from_messages(
+        messages=[
+            ("system", SYSTEM_ANSWER_QUESTION_TEMPLATE),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{question}"),
+        ]
+    )
+
+    response_synthesizer = prompt | _llm
+    response_chain = context | response_synthesizer
+
+    return response_chain
+
 # ------------------------ Code ------------------------
 
-# vectorstore, vector_keys, record_manager = initialize_vectorstore()
-# llm = initialize_llm()
+vectorstore, vector_keys, record_manager = initialize_vectorstore()
+llm = initialize_llm()
 
-# docs_in_vectorstore = [
-#     Document(page_content=page_content, metadata=metadata)
-#     for page_content, metadata in zip(
-#         vector_keys["documents"], vector_keys["metadatas"]
-#     )
-# ]
+docs_in_vectorstore = [
+    Document(page_content=page_content, metadata=metadata)
+    for page_content, metadata in zip(
+        vector_keys["documents"], vector_keys["metadatas"]
+    )
+]
 
-# retriever = initialize_retriever(vectorstore, docs_in_vectorstore, llm)
+retriever = initialize_retriever(vectorstore, docs_in_vectorstore, llm)
+
+
+st.title("Chat with Langchain")
+st.subheader("It uses a combination of keyword and semantic search to find answers.")
+
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display chat messages from history on app rerun
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Accept user input
+if prompt := st.chat_input("What is LangChain Expression Language?"):
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Display user message in chat message container
+    with st.chat_message("user"):
+        st.markdown(prompt)
+        
+    # Display assistant response in chat message container
+    with st.chat_message("assistant"):
+
+        #TODO: Probar la siguiente línea de código
+        # use_chat_history = len(st.session_state.messages) > 1
+        use_chat_history = False
+
+        chat_history = []
+        if use_chat_history:
+            for message in st.session_state.messages[:-1]:
+                if message["role"] == "user":
+                    chat_history.append(HumanMessage(content=message["content"]))
+                elif message["role"] == "assistant":
+                    chat_history.append(AIMessage(content=message["content"]))
+
+        answer_chain = create_answer_chain(
+            _llm=llm,
+            _retriever=retriever,
+            _use_chat_history=use_chat_history,
+            _k=k,
+        )
+
+        message_placeholder = st.empty()
+        full_response = ""
+        for token in answer_chain.stream(
+            {
+                "question": prompt,
+                "chat_history": chat_history,
+            }
+        ):
+            full_response += token.content
+            message_placeholder.markdown(full_response + "▌")
+
+        message_placeholder.markdown(full_response)
+
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
