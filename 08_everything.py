@@ -4,6 +4,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from operator import itemgetter
 from functools import partial
+from typing import Sequence
 
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, GoogleGenerativeAI
@@ -13,11 +14,11 @@ from langchain_classic.retrievers import EnsembleRetriever, MultiQueryRetriever
 from langchain_classic.indexes import SQLRecordManager
 from langchain_classic.schema import Document, StrOutputParser, HumanMessage, AIMessage
 from langchain_classic.schema.runnable import RunnableMap
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
 
 load_dotenv()
 
-k = 3
+k = 6
 
 CONDENSE_QUESTION_TEMPLATE = """\
 Given the following conversation and a follow up question, rephrase the follow up \
@@ -39,7 +40,7 @@ Standalone Question:"""
 
 SYSTEM_ANSWER_QUESTION_TEMPLATE = """\
 You are an expert programmer and problem-solver, tasked with answering any question \
-about 'Langchain' with high quality answers and without making anything up.
+about 'LLMs' with high quality answers and without making anything up.
 
 Generate a comprehensive and informative answer of 80 words or less for the \
 given question based solely on the provided search results (URL and content). You must \
@@ -77,24 +78,25 @@ def initialize_vectorstore():
     
     collection_name = "langchain_docs_index"
     namespace = f"chroma/{collection_name}"
-    persist_directory = "./data/vectors/chroma_db"
+    persist_directory = "data/vectors"
     
     _record_manager = SQLRecordManager(
         namespace=namespace,
-        db_url="{persist_directory}/records.db",
+        db_url=f"sqlite:///{persist_directory}/records.db",
     )
-    
+
     _vectorstore = Chroma(
         embedding_function=embedding,
         collection_name=collection_name,
-        persist_directory=persist_directory
+        persist_directory=f"{persist_directory}/chroma_db"
     )
     
     _vector_keys = _vectorstore.get(
-        ids=_record_manager.list_keys(), include=["documents", "metadatas"]
+        ids=_record_manager.list_keys(),
+        include=["documents", "metadatas"]
     )
     
-    return _vectorstore, _vector_keys, _record_manager
+    return _vectorstore, _vector_keys
 
 def initialize_llm():
     
@@ -114,7 +116,7 @@ def initialize_llm():
 def initialize_retriever(_vectorstore, _docs_in_vectorstore, _llm):
         
     bm25_retriever = BM25Retriever.from_documents(_docs_in_vectorstore)
-    bm25_retriever.k = 2
+    bm25_retriever.k = 3
 
     semantic_retriever = _vectorstore.as_retriever(
         search_type="mmr",
@@ -161,6 +163,22 @@ def get_k_or_less_documents(documents, k):
     else:
         return documents[:k]
 
+def reorder_documents(documents: list[Document]):
+    reorder = LongContextReorder()
+
+    for i, doc in enumerate(documents):
+        doc.metadata["original_index"] = i
+
+    return reorder.transform_documents(documents)
+
+
+def format_docs(docs: Sequence[Document]) -> str:
+    formatted_docs: list[str] = []
+    for i, doc in enumerate(docs):
+        doc_string = f"<doc id='{doc.metadata.get('original_index', i)}'>{doc.page_content}</doc>"
+        formatted_docs.append(doc_string)
+    return "\n".join(formatted_docs)
+
 def create_answer_chain(_llm,_retriever,_use_chat_history,_k):
 
     retriever_chain = create_retriever_chain(_llm, _retriever, _use_chat_history)
@@ -194,7 +212,7 @@ def create_answer_chain(_llm,_retriever,_use_chat_history,_k):
 
 # ------------------------ Code ------------------------
 
-vectorstore, vector_keys, record_manager = initialize_vectorstore()
+vectorstore, vector_keys = initialize_vectorstore()
 llm = initialize_llm()
 
 docs_in_vectorstore = [
@@ -207,7 +225,7 @@ docs_in_vectorstore = [
 retriever = initialize_retriever(vectorstore, docs_in_vectorstore, llm)
 
 
-st.title("Chat with Langchain")
+st.title("'Speech and Language Processing' Q&A")
 st.subheader("It uses a combination of keyword and semantic search to find answers.")
 
 # Initialize chat history
@@ -220,7 +238,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Accept user input
-if prompt := st.chat_input("What is LangChain Expression Language?"):
+if prompt := st.chat_input("What is a Morpheme?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -231,9 +249,7 @@ if prompt := st.chat_input("What is LangChain Expression Language?"):
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
 
-        #TODO: Probar la siguiente línea de código
-        # use_chat_history = len(st.session_state.messages) > 1
-        use_chat_history = False
+        use_chat_history = len(st.session_state.messages) > 1
 
         chat_history = []
         if use_chat_history:
@@ -258,7 +274,7 @@ if prompt := st.chat_input("What is LangChain Expression Language?"):
                 "chat_history": chat_history,
             }
         ):
-            full_response += token.content
+            full_response += token
             message_placeholder.markdown(full_response + "▌")
 
         message_placeholder.markdown(full_response)
