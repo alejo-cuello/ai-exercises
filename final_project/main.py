@@ -20,10 +20,10 @@ db.init_db()
 
 # ---------- cookie-based "remember me" so a page refresh doesn't log you out ----------
 
-@st.cache_resource
 def get_cookie_manager():
-    return stx.CookieManager()
-
+    if "cookie_manager" not in st.session_state:
+        st.session_state.cookie_manager = stx.CookieManager()
+    return st.session_state.cookie_manager
 cookie_manager = get_cookie_manager()
 
 
@@ -40,15 +40,15 @@ def _restore_session_from_cookie():
 def _start_session(user_id: int, username: str):
     st.session_state.user_id = user_id
     st.session_state.username = username
-    cookie_manager.set("user_id", str(user_id))
-    cookie_manager.set("username", username)
+    cookie_manager.set("user_id", str(user_id), key="set_user_id")
+    cookie_manager.set("username", username, key="set_username")
 
 
 def _end_session():
     for key in ("user_id", "username", "conversation_id", "messages"):
         st.session_state.pop(key, None)
-    cookie_manager.delete("user_id")
-    cookie_manager.delete("username")
+    cookie_manager.delete("user_id", key="delete_user_id")
+    cookie_manager.delete("username", key="delete_username")
 
 
 _restore_session_from_cookie()

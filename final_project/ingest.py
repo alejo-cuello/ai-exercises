@@ -131,7 +131,7 @@ def main(source_dir: str, tag: bool = False):
     chunks = split_documents(docs)
     print(f"Split into {len(chunks)} chunks.")
 
-    api_key = os.environ["API_KEY"]
+    api_key = os.environ.get("API_KEY")
 
     if tag:
         print("Tagging chunks ...")
