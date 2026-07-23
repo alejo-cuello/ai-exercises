@@ -4,3 +4,4 @@ data/vectors/*
 data/raw-unused/*
 !data/vectors/.gitkeep
 data/raw/ed3book_jan26.pdf
+final_project/__pycache__
