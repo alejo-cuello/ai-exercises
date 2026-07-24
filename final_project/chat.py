@@ -58,12 +58,10 @@ def get_retriever():
 
     all_docs = vectordb.get(include=["documents", "metadatas"])
 
-    print(f"docss: {all_docs}")
     docs_from_chroma = [
         Document(page_content=text, metadata=meta)
         for text, meta in zip(all_docs["documents"], all_docs["metadatas"])
     ]
-    print(f"docss: {len(docs_from_chroma)}")
 
 
     bm25_retriever = BM25Retriever.from_documents(docs_from_chroma)

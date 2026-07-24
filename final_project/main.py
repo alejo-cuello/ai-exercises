@@ -146,7 +146,10 @@ def render_chat():
 
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                answer = chat.get_answer(user_input, st.session_state.messages[:-1])
+                try:
+                    answer = chat.get_answer(user_input, st.session_state.messages[:-1])
+                except Exception:
+                    answer = "Something is not working. Try later."
                 st.markdown(answer)
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
