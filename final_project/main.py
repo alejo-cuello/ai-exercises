@@ -6,12 +6,17 @@ starting new chats, displaying message history, and running the
 LangChain+Chroma chain on each new user message.
 """
 
+import logging
+import traceback
+
 import streamlit as st
 import extra_streamlit_components as stx
 
 import db
 import auth
 import chat
+
+logger = logging.getLogger(__name__)
 
 st.set_page_config(page_title="Chatbot", page_icon="💬", layout="wide")
 
@@ -148,7 +153,8 @@ def render_chat():
             with st.spinner("Thinking..."):
                 try:
                     answer = chat.get_answer(user_input, st.session_state.messages[:-1])
-                except Exception as Err:
+                except Exception:
+                    logger.error("chat.get_answer failed:\n%s", traceback.format_exc())
                     answer = "Something is not working. Try later."
                 st.markdown(answer)
 
