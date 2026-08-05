@@ -13,7 +13,7 @@ import db
 import auth
 import chat
 
-st.set_page_config(page_title="My Chatbot", page_icon="💬", layout="wide")
+st.set_page_config(page_title="Chatbot", page_icon="💬", layout="wide")
 
 db.init_db()
 
@@ -57,7 +57,7 @@ _restore_session_from_cookie()
 # ---------- login / register screen ----------
 
 def render_login_page():
-    st.title("💬 My Chatbot")
+    st.title("Chatbot sobre teoría de LLMs")
     login_tab, register_tab = st.tabs(["Log in", "Register"])
 
     with login_tab:
@@ -119,7 +119,7 @@ def render_sidebar():
 # ---------- main chat area ----------
 
 def render_chat():
-    st.title("💬 My Chatbot")
+    st.title("Chatbot sobre teoría de LLMs")
 
     if "conversation_id" not in st.session_state:
         conversations = db.get_conversations(st.session_state.user_id)
@@ -148,7 +148,7 @@ def render_chat():
             with st.spinner("Thinking..."):
                 try:
                     answer = chat.get_answer(user_input, st.session_state.messages[:-1])
-                except Exception:
+                except Exception as Err:
                     answer = "Something is not working. Try later."
                 st.markdown(answer)
 

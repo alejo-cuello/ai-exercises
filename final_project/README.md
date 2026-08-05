@@ -14,7 +14,7 @@
 |---|---|---|
 | `DB_USER` | Postgres user | `postgres` |
 | `DB_PASSWORD` | Postgres password | (from Secret Manager) |
-| `DB_NAME` | Database name | `chatbot` |
+| `DB_NAME` | Database name | `users_and_conversations` |
 | `DB_HOST` | Local dev only | `localhost` |
 | `DB_PORT` | Local dev only | `5432` |
 | `INSTANCE_CONNECTION_NAME` | Cloud Run only, enables Unix socket connection | `project:region:instance` |
@@ -27,7 +27,7 @@
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-export DB_USER=postgres DB_PASSWORD=yourpassword DB_NAME=chatbot
+export DB_USER=postgres DB_PASSWORD=yourpassword DB_NAME=users_and_conversations
 export DB_HOST=localhost DB_PORT=5432
 export CHROMA_PERSIST_DIR=./chroma_db
 export API_KEY=sk-...
@@ -90,7 +90,7 @@ Then trigger a build + deploy:
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions=_INSTANCE_CONNECTION_NAME="PROJECT_ID:us-central1:chatbot-db",_CHROMA_BUCKET="YOUR_PROJECT-chroma-db"
+  --substitutions=_INSTANCE_CONNECTION_NAME="PROJECT_ID:us-central1:users-and-conversations-db",_CHROMA_BUCKET="YOUR_PROJECT-chroma-db"
 ```
 
 To build automatically on every `git push`, connect this repo to Cloud
