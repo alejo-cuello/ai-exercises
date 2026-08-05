@@ -15,6 +15,7 @@ last few messages verbatim and summarizes anything older.
 import os
 import streamlit as st
 from dotenv import load_dotenv
+from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
 from langchain_chroma import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_classic.chains import create_retrieval_chain
@@ -38,10 +39,16 @@ API_KEY = os.environ.get("API_KEY","")
 # Messages kept verbatim in the prompt; anything older gets summarized instead.
 RECENT_MESSAGES_WINDOW = 4
 
+# When the primary model is under high demand (rate-limited or overloaded),
+# fall back to a lighter Gemini 2.5 variant with separate quota.
+HIGH_DEMAND_ERRORS = (ResourceExhausted, ServiceUnavailable)
+
 
 @st.cache_resource
 def get_llm():
-    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=API_KEY, temperature=0.0)
+    primary = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=API_KEY, temperature=0.0)
+    fallback = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=API_KEY, temperature=0.0)
+    return primary.with_fallbacks([fallback], exceptions_to_handle=HIGH_DEMAND_ERRORS)
 
 
 @st.cache_resource
