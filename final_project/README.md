@@ -90,7 +90,7 @@ Then trigger a build + deploy:
 
 ```bash
 gcloud builds submit --config cloudbuild.yaml \
-  --substitutions=_INSTANCE_CONNECTION_NAME="PROJECT_ID:us-central1:users-and-conversations-db",_CHROMA_BUCKET="YOUR_PROJECT-chroma-db"
+  --substitutions=_INSTANCE_CONNECTION_NAME="PROJECT_ID:southamerica-west1:users-and-conversations",_CHROMA_BUCKET="chroma_db_users_and_conversations"
 ```
 
 To build automatically on every `git push`, connect this repo to Cloud
