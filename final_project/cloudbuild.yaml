@@ -3,7 +3,7 @@
 # Builds the image, pushes it to Artifact Registry, and deploys to Cloud Run.
 # Trigger manually with:
 #   gcloud builds submit --config cloudbuild.yaml \
-#     --substitutions=_INSTANCE_CONNECTION_NAME="PROJECT_ID:southamerica-west1:users-and-conversations-db",_CHROMA_BUCKET="YOUR_PROJECT-chroma-db"
+#     --substitutions=_INSTANCE_CONNECTION_NAME="PROJECT_ID:southamerica-west1:users-and-conversations",_CHROMA_BUCKET="YOUR_PROJECT-chroma-db"
 #
 # Or connect this file to a GitHub trigger for build-on-push.
 
@@ -51,7 +51,7 @@ images:
   - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:latest"
 
 substitutions:
-  _INSTANCE_CONNECTION_NAME: "PROJECT_ID:southamerica-west1:users-and-conversations-db"
+  _INSTANCE_CONNECTION_NAME: "PROJECT_ID:southamerica-west1:users-and-conversations"
   _CHROMA_BUCKET: "YOUR_PROJECT-chroma-db"
 
 options:
