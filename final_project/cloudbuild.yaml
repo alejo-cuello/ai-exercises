@@ -13,7 +13,7 @@ steps:
     args:
       - "build"
       - "-t"
-      - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$SHORT_SHA"
+      - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$BUILD_ID"
       - "-t"
       - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:latest"
       - "."
@@ -22,7 +22,7 @@ steps:
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
-      - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$SHORT_SHA"
+      - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$BUILD_ID"
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
@@ -35,7 +35,7 @@ steps:
       - "run"
       - "deploy"
       - "users-and-conversations"
-      - "--image=southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$SHORT_SHA"
+      - "--image=southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$BUILD_ID"
       - "--region=southamerica-west1"
       - "--add-cloudsql-instances=${_INSTANCE_CONNECTION_NAME}"
       - "--add-volume=name=chroma-vol,type=cloud-storage,bucket=${_CHROMA_BUCKET}"
@@ -47,7 +47,7 @@ steps:
       - "--max-instances=1"
 
 images:
-  - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$SHORT_SHA"
+  - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:$BUILD_ID"
   - "southamerica-west1-docker.pkg.dev/$PROJECT_ID/users-and-conversations-repo/users-and-conversations:latest"
 
 substitutions:
