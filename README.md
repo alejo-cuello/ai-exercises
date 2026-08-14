@@ -9,7 +9,7 @@ generation) techniques with LangChain.
   RAG building blocks: chapter-based splitting, parent-document retrieval,
   self-querying retrieval, multi-query retrieval, ensemble retrieval,
   semantic reranking, MMR reranking, chains, open-source LLMs/embeddings,
-  and chat with memory.
+  and chat with memory. I learned through Platzi courses.
 - [`final_project/`](final_project/) — a deployed chatbot: Streamlit UI,
   Postgres-backed auth/conversations, and a LangChain + Chroma retrieval
   chain, containerized and deployed to Cloud Run via Cloud Build. See
