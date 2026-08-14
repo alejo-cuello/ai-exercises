@@ -71,19 +71,37 @@ One-time setup — give Cloud Build's service account permission to deploy
 to Cloud Run and read secrets:
 
 ```bash
-PROJECT_NUMBER=$(gcloud projects describe PROJECT_ID --format='value(projectNumber)')
-
+# Grant Cloud Logging write access
 gcloud projects add-iam-policy-binding PROJECT_ID \
-  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
+  --role="roles/logging.logWriter"
+
+# Grant Artifact Registry write access (push images)
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
+  --role="roles/artifactregistry.writer"
+
+# Allow the service account to act as itself (needed for Cloud Run deploy)
+gcloud iam service-accounts add-iam-policy-binding \
+  SERVICE_ACCOUNT_EMAIL \
+  --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
+  --role="roles/iam.serviceAccountUser" \
+  --project=PROJECT_ID
+
+# Grant Cloud Run admin permissions (deploy/manage services)
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
   --role="roles/run.admin"
 
+# Grant Cloud SQL client access (connect to Cloud SQL instance)
 gcloud projects add-iam-policy-binding PROJECT_ID \
-  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
+  --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
+  --role="roles/cloudsql.client"
 
+# Grant Secret Manager access (read secrets like DB_PASSWORD, API_KEY)
 gcloud projects add-iam-policy-binding PROJECT_ID \
-  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountUser"
+  --member="serviceAccount:SERVICE_ACCOUNT_EMAIL" \
+  --role="roles/secretmanager.secretAccessor"
 ```
 
 Then trigger a build + deploy:
