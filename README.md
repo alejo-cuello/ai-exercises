@@ -3,6 +3,10 @@
 Exercises and a final project built while learning RAG (retrieval-augmented
 generation) techniques with LangChain.
 
+## Demo
+
+[See how it works](https://youtu.be/t6Er_Ep7lXg)
+
 ## Structure
 
 - [`first_exercises/`](first_exercises/) — notebooks progressing through
