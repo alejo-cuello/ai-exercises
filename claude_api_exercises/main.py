@@ -165,16 +165,30 @@ def strip_json_fence(text: str) -> str:
     return text
 
 def exec_json_example(client: Anthropic) -> None:
-    invoice_text = """
-    Factura de ACME S.A. emitida el 2026-05-01.
-    2 horas de consultoría a 50 USD cada una. Total: USD 100.
-    """
+
+    # Ejemplo 1
+    # invoice_text = """
+    # Factura de ACME S.A. emitida el 2026-05-01.
+    # 2 horas de consultoría a 50 USD cada una. Total: USD 100.
+    # """
+
+    # Ejemplo 2
+    invoice_text = "Factura ACME emitida el 2026-05-01. Servicio: soporte, total: USD 129.90. Impuesto del 10%"
+
     response = client.messages.create(
         model=MODEL,
         max_tokens=500,
         system= """
             Extrae la información de la factura.
-            Responde únicamente JSON válido que siga estos modelos:"
+            Reglas:
+            - No inventes datos. Si un campo no aparece, usa null.
+            - Normaliza montos como números, sin símbolos de moneda.
+            - La moneda debe ser un código ISO si puedes inferirlo.
+            - Si la factura no muestra moneda explícita, usa null.
+            - Si hay impuestos separados, inclúyelos en items solo si aparecen como línea propia.
+            - Si no puedes leer un campo, usa null en lugar de adivinar.
+            - No agregues explicación fuera del JSON.
+            - Responde únicamente JSON válido que siga estos modelos:"
                 class InvoiceItem(BaseModel):
                     description: str
                     quantity: float | None = None
@@ -187,7 +201,7 @@ def exec_json_example(client: Anthropic) -> None:
                     currency: str
                     total: float
                     items: list[InvoiceItem]"
-            No agregues explicación fuera del JSON.
+
             """,
         messages=[{"role": "user", "content": invoice_text}],
     )
