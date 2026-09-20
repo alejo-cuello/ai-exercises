@@ -1,5 +1,7 @@
 import os
 import json
+import base64
+import mimetypes
 
 from dotenv import load_dotenv
 from pathlib import Path
@@ -48,6 +50,11 @@ def stream_claude_response(client: Anthropic, messages: list[dict[str, str]]) ->
             assistant_text += text
     print()
     return assistant_text
+
+def encode_file(path: Path) -> tuple[str, str]:
+    media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    data = base64.b64encode(path.read_bytes()).decode("utf-8")
+    return media_type, data
 
 def exec_summarize_example(client: Anthropic) -> None:
     messages = [
@@ -112,12 +119,37 @@ def exec_story_example(client: Anthropic) -> None:
         messages.append({"role": "assistant", "content": assistant_text})
         save_history(messages)    
 
+def exec_multimedia_example(client: Anthropic) -> None:
+    file_path = Path("sample.pdf")
+    if not file_path.exists():
+        raise FileNotFoundError("Agrega un archivo sample.pdf junto a este script.")
+
+    media_type, data = encode_file(file_path)
+    content_type = "document" if media_type == "application/pdf" else "image"
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=500,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": content_type, "source": {"type": "base64", "media_type": media_type, "data": data}},
+                {"type": "text", "text": "Resume el contenido principal en 2 bullets."},
+            ],
+        }],
+    )
+
+    for block in response.content:
+        if block.type == "text":
+            print(block.text)
+
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
 
     # exec_summarize_example(client)
     # exec_streaming_example(client)
-    exec_story_example(client)
+    # exec_story_example(client)
+    exec_multimedia_example(client)
 
 
 if __name__ == "__main__":
