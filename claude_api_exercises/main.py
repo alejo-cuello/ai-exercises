@@ -7,20 +7,16 @@ from dotenv import load_dotenv
 from pathlib import Path
 from anthropic import Anthropic
 from pydantic import BaseModel
+from collections.abc import Callable
 
 MODEL = "claude-haiku-4-5-20251001"
 MAX_HISTORY_MESSAGES = 2
 HISTORY_PATH = Path("history.json")
 
-WEATHER_TOOL = {
-    "name": "get_weather",
-    "description": "Obtiene el clima actual para una ciudad.",
-    "input_schema": {
-        "type": "object",
-        "properties": {"city": {"type": "string", "description": "Ciudad a consultar."}},
-        "required": ["city"],
-    },
-}
+def get_weather(city: str) -> dict[str, object]:
+    return {"city": city, "temperature": 18, "condition": "lluvia ligera"}
+
+available_tools: dict[str, Callable[..., dict[str, object]]] = {"get_weather": get_weather}
 
 class InvoiceItem(BaseModel):
     description: str
@@ -223,18 +219,37 @@ def exec_json_example(client: Anthropic) -> None:
     print(f"json: \n {invoice.model_dump_json(indent=2)}")
 
 def exec_tools_example(client: Anthropic) -> None:
+    tools = [{
+        "name": "get_weather",
+        "description": "Obtiene el clima actual de una ciudad.",
+        "input_schema": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]},
+    }]
+
+    messages=[{"role": "user", "content": "¿Cómo está el clima en Bogotá?"}]
+
     response = client.messages.create(
         model=MODEL,
         max_tokens=400,
-        tools=[WEATHER_TOOL],
-        messages=[{"role": "user", "content": "¿Cómo está el clima en Guatemala?"}],
+        tools=tools,
+        messages=messages,
     )
+
+    messages.append({"role": "assistant", "content": response.content})
 
     for block in response.content:
         if block.type == "tool_use":
-            print(f"Claude quiere usar {block.name} con input: {block.input}")
-        elif block.type == "text":
-            print(block.text)
+            tool = available_tools[block.name]
+            result = tool(**block.input)
+            messages.append({"role": "user", "content": [{
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": json.dumps(result, ensure_ascii=False),
+            }]})
+
+    print(f"messages: \n {messages}")
+
+    final = client.messages.create(model=MODEL, max_tokens=500, messages=messages)
+    print("".join(block.text for block in final.content if block.type == "text"))
 
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
