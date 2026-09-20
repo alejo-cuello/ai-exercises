@@ -6,11 +6,24 @@ import mimetypes
 from dotenv import load_dotenv
 from pathlib import Path
 from anthropic import Anthropic
+from pydantic import BaseModel
 
 MODEL = "claude-haiku-4-5-20251001"
 MAX_HISTORY_MESSAGES = 2
 HISTORY_PATH = Path("history.json")
 
+class InvoiceItem(BaseModel):
+    description: str
+    quantity: float | None = None
+    unit_price: float | None = None
+    total: float
+
+class InvoiceData(BaseModel):
+    provider: str
+    date: str
+    currency: str
+    total: float
+    items: list[InvoiceItem]
 
 def require_api_key() -> str:
     load_dotenv()
@@ -143,14 +156,56 @@ def exec_multimedia_example(client: Anthropic) -> None:
         if block.type == "text":
             print(block.text)
 
+def strip_json_fence(text: str) -> str:
+    """Quita el bloque de código markdown (```json ... ```) si el modelo lo agrega."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.removeprefix("```json").removeprefix("```").strip()
+        text = text.removesuffix("```").strip()
+    return text
+
+def exec_json_example(client: Anthropic) -> None:
+    invoice_text = """
+    Factura de ACME S.A. emitida el 2026-05-01.
+    2 horas de consultoría a 50 USD cada una. Total: USD 100.
+    """
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=500,
+        system= """
+            Extrae la información de la factura.
+            Responde únicamente JSON válido que siga estos modelos:"
+                class InvoiceItem(BaseModel):
+                    description: str
+                    quantity: float | None = None
+                    unit_price: float | None = None
+                    total: float
+
+                class InvoiceData(BaseModel):
+                    provider: str
+                    date: str
+                    currency: str
+                    total: float
+                    items: list[InvoiceItem]"
+            No agregues explicación fuera del JSON.
+            """,
+        messages=[{"role": "user", "content": invoice_text}],
+    )
+
+    raw_text = "".join(block.text for block in response.content if block.type == "text")
+    print(f"raw text: \n {raw_text}")
+    json_text = strip_json_fence(raw_text)
+    invoice = InvoiceData.model_validate(json.loads(json_text))
+    print(f"json: \n {invoice.model_dump_json(indent=2)}")
+
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
 
     # exec_summarize_example(client)
     # exec_streaming_example(client)
     # exec_story_example(client)
-    exec_multimedia_example(client)
-
+    # exec_multimedia_example(client)
+    exec_json_example(client)
 
 if __name__ == "__main__":
     main()
