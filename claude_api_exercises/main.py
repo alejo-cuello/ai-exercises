@@ -12,6 +12,16 @@ MODEL = "claude-haiku-4-5-20251001"
 MAX_HISTORY_MESSAGES = 2
 HISTORY_PATH = Path("history.json")
 
+WEATHER_TOOL = {
+    "name": "get_weather",
+    "description": "Obtiene el clima actual para una ciudad.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"city": {"type": "string", "description": "Ciudad a consultar."}},
+        "required": ["city"],
+    },
+}
+
 class InvoiceItem(BaseModel):
     description: str
     quantity: float | None = None
@@ -212,6 +222,20 @@ def exec_json_example(client: Anthropic) -> None:
     invoice = InvoiceData.model_validate(json.loads(json_text))
     print(f"json: \n {invoice.model_dump_json(indent=2)}")
 
+def exec_tools_example(client: Anthropic) -> None:
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=400,
+        tools=[WEATHER_TOOL],
+        messages=[{"role": "user", "content": "¿Cómo está el clima en Guatemala?"}],
+    )
+
+    for block in response.content:
+        if block.type == "tool_use":
+            print(f"Claude quiere usar {block.name} con input: {block.input}")
+        elif block.type == "text":
+            print(block.text)
+
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
 
@@ -219,7 +243,8 @@ def main() -> None:
     # exec_streaming_example(client)
     # exec_story_example(client)
     # exec_multimedia_example(client)
-    exec_json_example(client)
+    # exec_json_example(client)
+    exec_tools_example(client)
 
 if __name__ == "__main__":
     main()
