@@ -19,7 +19,11 @@ def main() -> None:
         model=MODEL,
         max_tokens=200,
         system="Se breve y conciso, no hagas sugerencias y preguntas a no ser que se te pida explícitamente.",
-        messages=[{"role": "user", "content": "Hola"}],
+        messages=[
+            {"role": "user", "content": "Mi proyecto será un chatbot para recetas."},
+            {"role": "assistant", "content": "Perfecto. Puedo ayudarte con ingredientes y pasos."},
+            {"role": "user", "content": "Recuérdame cuál era mi proyecto y sugiere el primer feature."},
+        ]
     )
 
 
