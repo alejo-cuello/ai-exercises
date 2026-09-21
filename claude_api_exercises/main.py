@@ -181,10 +181,12 @@ def exec_json_example(client: Anthropic) -> None:
     # Ejemplo 2
     invoice_text = "Factura ACME emitida el 2026-05-01. Servicio: soporte, total: USD 129.90. Impuesto del 10%"
 
+    schema = json.dumps(InvoiceData.model_json_schema(), ensure_ascii=False)
+
     response = client.messages.create(
         model=MODEL,
         max_tokens=500,
-        system= """
+        system= f"""
             Extrae la información de la factura.
             Reglas:
             - No inventes datos. Si un campo no aparece, usa null.
@@ -194,20 +196,8 @@ def exec_json_example(client: Anthropic) -> None:
             - Si hay impuestos separados, inclúyelos en items solo si aparecen como línea propia.
             - Si no puedes leer un campo, usa null en lugar de adivinar.
             - No agregues explicación fuera del JSON.
-            - Responde únicamente JSON válido que siga estos modelos:"
-                class InvoiceItem(BaseModel):
-                    description: str
-                    quantity: float | None = None
-                    unit_price: float | None = None
-                    total: float
-
-                class InvoiceData(BaseModel):
-                    provider: str
-                    date: str
-                    currency: str
-                    total: float
-                    items: list[InvoiceItem]"
-
+            - Responde únicamente JSON válido que siga este JSON Schema:
+            {schema}
             """,
         messages=[{"role": "user", "content": invoice_text}],
     )
