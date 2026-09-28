@@ -309,6 +309,17 @@ def exec_loop_limit_example() -> None:
         print(run_tool("get_weather", {"city": "Bogotá"}))
         # break
 
+def exec_caching_example(client: Anthropic) -> None:
+    long_policy = "Reglas internas del asistente. " * 400
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=300,
+        system=[{"type": "text", "text": long_policy, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": "Resume las 3 reglas principales."}],
+    )
+    print("".join(block.text for block in response.content if block.type == "text"))
+    print(response.usage)
 
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
@@ -320,7 +331,8 @@ def main() -> None:
     # exec_json_example(client)
     # exec_tools_example(client)
     # exec_loop_example(client)
-    exec_loop_limit_example()
+    # exec_loop_limit_example()
+    exec_caching_example(client)
 
 if __name__ == "__main__":
     main()
