@@ -104,6 +104,15 @@ def calculator(expression: str) -> str:
     except (SyntaxError, ValueError, ZeroDivisionError) as error:
         return f"Expresión rechazada: {error}"
 
+def run_tool(name: str, args: dict[str, object]) -> str:
+    if name not in available_tools:
+        return "Error: herramienta no permitida."
+
+    try:
+        return str(available_tools[name](**args))
+    except Exception as error:
+        return f"Error ejecutando {name}: {error}"
+
 # Exec functions for each class
 
 def exec_summarize_example(client: Anthropic) -> None:
@@ -292,6 +301,15 @@ def exec_loop_example(client: Anthropic) -> None:
 
     print("El agente alcanzó el límite de pasos.")
 
+def exec_loop_limit_example() -> None:
+    for step in range(MAX_STEPS):
+        if step == MAX_STEPS - 1:
+            print("El agente alcanzó el máximo de pasos permitidos.")
+            # break
+        print(run_tool("get_weather", {"city": "Bogotá"}))
+        # break
+
+
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
 
@@ -301,7 +319,8 @@ def main() -> None:
     # exec_multimedia_example(client)
     # exec_json_example(client)
     # exec_tools_example(client)
-    exec_loop_example(client)
+    # exec_loop_example(client)
+    exec_loop_limit_example()
 
 if __name__ == "__main__":
     main()
