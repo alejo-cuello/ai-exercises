@@ -10,6 +10,8 @@ from pathlib import Path
 from anthropic import Anthropic
 from pydantic import BaseModel
 from collections.abc import Callable
+from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
+from anthropic.types.messages.batch_create_params import Request
 
 MODEL = "claude-haiku-4-5-20251001"
 MAX_HISTORY_MESSAGES = 2
@@ -321,6 +323,28 @@ def exec_caching_example(client: Anthropic) -> None:
     print("".join(block.text for block in response.content if block.type == "text"))
     print(response.usage)
 
+def exec_batch_example(client: Anthropic) -> None:
+    batch = client.messages.batches.create(requests=[
+        Request(
+            custom_id="invoice-001",
+            params=MessageCreateParamsNonStreaming(
+                model=MODEL,
+                max_tokens=500,
+                messages=[{"role": "user", "content": "Resume esta factura de ejemplo."}],
+            ),
+        )
+    ])
+    print(batch.id, batch.processing_status)
+
+    batch_status = client.messages.batches.retrieve(batch.id)
+    print(batch_status.processing_status)
+
+    if batch_status.processing_status == "ended":
+        for result in client.messages.batches.results(batch.id):
+            print(result.custom_id, result.result.type)
+    else:
+        print("El batch todavía no termina. Vuelve a consultar más tarde antes de leer results.")
+
 def main() -> None:
     client = Anthropic(api_key=require_api_key())
 
@@ -332,7 +356,8 @@ def main() -> None:
     # exec_tools_example(client)
     # exec_loop_example(client)
     # exec_loop_limit_example()
-    exec_caching_example(client)
+    # exec_caching_example(client)
+    exec_batch_example(client)
 
 if __name__ == "__main__":
     main()
