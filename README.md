@@ -1,7 +1,8 @@
 # ai-exercises
 
 Exercises and a final project built while learning RAG (retrieval-augmented
-generation) techniques with LangChain.
+generation) techniques with LangChain, plus a set of scripts exploring the
+Claude API directly with the Anthropic Python SDK.
 
 ## Demo
 
@@ -25,18 +26,25 @@ generation) techniques with LangChain.
   chain, containerized and deployed to Cloud Run via Cloud Build. See
   [`final_project/README.md`](final_project/README.md) for setup,
   environment variables, and deployment instructions.
+- [`claude_api_exercises/`](claude_api_exercises/) — standalone Python
+  scripts, one per class, that use the Claude API without LangChain:
+  messages, streaming, chat history, PDFs/images, JSON extraction, tool use,
+  agent loops, prompt caching, and batches. They end in a FastAPI app that
+  combines several of them. See
+  [`claude_api_exercises/README.md`](claude_api_exercises/README.md) for a
+  description of each script and how to run them.
 
 ## Setup
 
 Each part has its own `requirements.txt` (`first_exercises/requirements.txt`,
-`final_project/requirements.txt`). Create a virtual environment and install
-the one for the part you're working on:
+`final_project/requirements.txt`, `claude_api_exercises/requirements.txt`).
+Create a virtual environment and install the one for the part you're working on:
 
 ```bash
 python -m venv venv
 source venv/bin/activate  # on Windows: venv\Scripts\activate
-pip install -r first_exercises/requirements.txt   # or final_project/requirements.txt
+pip install -r first_exercises/requirements.txt   # or final_project/ or claude_api_exercises/
 ```
 
-Both parts expect API keys (LLM/embeddings provider) via a `.env` file in
-their respective folders.
+Every part expects API keys via a `.env` file in its own folder. For
+`claude_api_exercises/`, that's `ANTHROPIC_API_KEY`.
