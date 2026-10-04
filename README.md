@@ -13,6 +13,7 @@ Claude API directly with the Anthropic Python SDK.
 - Inspired by these Platzi courses:
   - [Langchain](https://platzi.com/cursos/langchain-chatbots/)
   - [Langchain for information management and retrieval](https://platzi.com/cursos/langchain-documents/)
+  - [Claude API](https://platzi.com/cursos/claude-api/)
 
 ## Structure
 
